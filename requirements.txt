@@ -1,1 +1,9 @@
 pytest
+dbt-core
+dbt-postgres
+fastapi
+uvicorn[standard]
+psycopg2-binary
+python-dotenv
+boto3
+pandas
