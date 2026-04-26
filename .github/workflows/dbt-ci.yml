@@ -51,7 +51,7 @@ jobs:
         run: |
           mkdir -p ~/.dbt
           cat > ~/.dbt/profiles.yml <<EOF
-          ci_cd_dbt_s3:
+          analytics:
             target: dev
             outputs:
               dev:
