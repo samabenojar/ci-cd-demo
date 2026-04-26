@@ -1,0 +1,82 @@
+name: dbt CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  dbt-ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sam
+          POSTGRES_PASSWORD: sam_password
+          POSTGRES_DB: analytics
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sam -d analytics"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: analytics
+      DB_USER: sam
+      DB_PASSWORD: sam_password
+      DB_SCHEMA: public
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install dbt-postgres psycopg2-binary
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<EOF
+          ci_cd_dbt_s3:
+            target: dev
+            outputs:
+              dev:
+                type: postgres
+                host: "${DB_HOST}"
+                user: "${DB_USER}"
+                password: "${DB_PASSWORD}"
+                port: ${DB_PORT}
+                dbname: "${DB_NAME}"
+                schema: "${DB_SCHEMA}"
+                threads: 4
+          EOF
+
+      - name: Run dbt debug
+        working-directory: ./dbt_project
+        run: dbt debug
+
+      - name: Run dbt seed
+        working-directory: ./dbt_project
+        run: dbt seed
+
+      - name: Run dbt models
+        working-directory: ./dbt_project
+        run: dbt run
+
+      - name: Run dbt tests
+        working-directory: ./dbt_project
+        run: dbt test
