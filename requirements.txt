@@ -11,3 +11,5 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
+pytest
+httpx
